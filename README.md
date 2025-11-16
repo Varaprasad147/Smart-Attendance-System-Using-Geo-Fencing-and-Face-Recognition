@@ -30,7 +30,7 @@ Smart Attendance System Using Geo-Fencing and Face Recognition
 The Smart Attendance System combines Face Recognition and Geo-Fencing to automate secure, location-based attendance marking for students and staff.
 This system prevents proxy attendance, ensures authenticity, and provides a user-friendly admin dashboard for monitoring attendance in real time.
 
-# ✨ Key Features
+## ✨ Key Features
 ## 🔐 Face Recognition
 Detects and recognizes faces using OpenCV and dlib/face_recognition.
 
@@ -38,14 +38,14 @@ Ensures only registered individuals can mark attendance.
 
 High accuracy even in different lighting conditions.
 
-📍 Geo-Fencing Based Validation
+## 📍 Geo-Fencing Based Validation
 Attendance is allowed only when the user is within a predefined radius (e.g., 100m) of the institution.
 
 Uses device GPS (browser/Android API) for location verification.
 
 Prevents fake or proxy attendance from outside locations.
 
-🖥️ Admin Dashboard
+## 🖥️ Admin Dashboard
 View daily/weekly/monthly attendance.
 
 Add/manage students and staff.
@@ -54,14 +54,14 @@ Generate attendance reports in CSV/PDF.
 
 Monitor geo-location logs and face recognition logs.
 
-👨‍💻 User Portal
+## 👨‍💻 User Portal
 Students can view their attendance history.
 
 Staff can verify class attendance.
 
 Secure login for both students and admins.
 
-🧰 Tech Stack
+## 🧰 Tech Stack
 Backend
 Python 3.x
 
@@ -86,7 +86,7 @@ dlib
 Location Services
 Browser Geolocation API
 
-⚙️ Installation Guide:
+## ⚙️ Installation Guide:
  1️⃣ Clone the Repository:
     git clone https://github.com/your-username/Smart-Attendance-System-Using-Geo-Fencing-and-Face-Recognition.git
     cd Smart-Attendance-System-Using-Geo-Fencing-and-Face-Recognition
@@ -102,7 +102,7 @@ Browser Geolocation API
   5️⃣ Run the Server:
     python manage.py runserver
 
-🧪 How Face Recognition Works
+##  How Face Recognition Works
 Face encodings are generated during registration.
 
 OpenCV captures a real-time frame from the camera.
@@ -111,10 +111,32 @@ The system compares live encodings with stored encodings.
 
 If the match is above threshold → attendance is marked.
 
-📍 How Geo-Fencing Works
+##  How Geo-Fencing Works
 User's location is captured using browser GPS.
 
 Distance is calculated using Haversine formula.
+
+## Screenshots:
+   ### 🟦 Super Admin Dashboard
+   ![Superadmin Dashboard](screenshots/superadmin_dashboard.png)
+
+   ### 🟦 Admin Dashboard
+   ![Admin Dashboard](screenshots/admin_dashboard.png)
+
+   ### 🟦 Student Dashboard
+   ![Student Dashboard](screenshots/student_dashboard.png)
+   
+   ### 👤 Face Recognition
+   ![Face Recognition](screenshots/face_recognition.png)
+
+   ### 📍 Geo-Fencing Verification
+   ![Geo Fencing](screenshots/location_validation.png)
+
+
+
+
+
+
 
 📑 Future Enhancements
 Mobile App (Flutter/React Native)
@@ -125,17 +147,19 @@ OTP verification for multi-factor attendance
 
 AI-based spoof detection
 
-🤝 Contributions
+##  Contributions
 Pull requests are welcome.
 For major changes, open an issue first to discuss the changes.
 
 📄 License
 This project is licensed under the MIT License.
 
-👨‍🎓 Author
+## 👨‍🎓 Author
 Nagalla Vara Prasad
 B.Tech CSE (AI & ML) – GMRIT
 Django | AI/ML | Computer Vision
+
+
 
 
 
