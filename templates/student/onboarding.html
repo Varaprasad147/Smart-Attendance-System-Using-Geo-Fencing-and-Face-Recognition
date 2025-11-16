@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Onboarding{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Complete Your Account Setup</h5>
+        </div>
+        <div class="card-body">
+          {% if error %}
+          <div class="alert alert-danger">{{ error }}</div>
+          {% endif %}
+          <p class="text-muted">For security, please set a new password and upload your photo. You will be asked to sign in again.</p>
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-control" name="new_password" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-control" name="confirm_password" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Your Photo</label>
+              <input type="file" class="form-control" name="photo" accept="image/*" required>
+              <div class="form-text">Upload a clear photo of your face. This will be used for attendance verification.</div>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Finish Setup</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

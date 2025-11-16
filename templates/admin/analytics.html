@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2"><i class="bi bi-graph-up"></i> Analytics</h1>
+  <a href="{% url 'users:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><h5 class="mb-0">Filters</h5></div>
+  <div class="card-body">
+    <form method="GET" class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control" name="from_date" value="{{ from_date }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control" name="to_date" value="{{ to_date }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Company</label>
+        <select class="form-select" name="company">
+          <option value="">All</option>
+          {% for c in companies %}
+          <option value="{{ c }}" {% if company == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 align-self-end">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Apply</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card mb-3"><div class="card-body">
+      <h6 class="card-title">Attendance Summary</h6>
+      <div class="d-flex justify-content-between"><span>Total</span><strong>{{ total_attendance }}</strong></div>
+      <div class="d-flex justify-content-between"><span>Present</span><strong>{{ present_count }}</strong></div>
+      <div class="d-flex justify-content-between"><span>Geo Failed</span><strong>{{ fail_geo_count }}</strong></div>
+      <div class="d-flex justify-content-between"><span>Face Failed</span><strong>{{ fail_face_count }}</strong></div>
+      <div class="d-flex justify-content-between"><span>Both Failed</span><strong>{{ fail_both_count }}</strong></div>
+    </div></div>
+    
+    <div class="card mb-3"><div class="card-body">
+      <h6 class="card-title">Time Tracking</h6>
+      <div class="d-flex justify-content-between"><span>Completed Sessions</span><strong>{{ completed_sessions }}</strong></div>
+      <div class="d-flex justify-content-between"><span>Total Time</span><strong>{{ total_time_hours|floatformat:1 }}h</strong></div>
+      <div class="d-flex justify-content-between"><span>Avg Time/Session</span><strong>{{ avg_time_hours|floatformat:1 }}h</strong></div>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card"><div class="card-body">
+      <div class="row g-3">
+        <div class="col-12">
+          <canvas id="dailyChart" height="150"></canvas>
+        </div>
+        <div class="col-12">
+          <canvas id="summaryChart" height="150"></canvas>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Working Days Summary Card -->
+<div class="card mt-4 mb-3">
+  <div class="card-body text-center">
+    <h5 class="mb-2"><i class="bi bi-calendar-check"></i> Working Days Summary</h5>
+    <div class="row">
+      <div class="col-md-6">
+        <h2 class="mb-0 text-success">{{ total_working_days }}</h2>
+        <p class="text-muted mb-0">Total Working Days</p>
+        <small class="text-muted">(Common to all students)</small>
+      </div>
+      <div class="col-md-6">
+        <h2 class="mb-0 text-primary">{{ completed_sessions }}</h2>
+        <p class="text-muted mb-0">Completed Attendances</p>
+        <small class="text-muted">(Check-in & Check-out done)</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Time Tracking Table -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Student Attendance Report</h5>
+  </div>
+  <div class="card-body">
+    {% if student_time_data %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Company</th>
+            <th>Days Attended</th>
+            <th>Working Days</th>
+            <th>Attendance Rate</th>
+            <th>Total Time</th>
+            <th>Avg Time/Day</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in student_time_data %}
+          <tr>
+            <td>
+              <div>
+                <strong>{{ data.student.name }}</strong><br>
+                <small class="text-muted">{{ data.student.jntu_no }}</small>
+              </div>
+            </td>
+            <td>{{ data.student.company|default:'-' }}</td>
+            <td>
+              <span class="badge bg-primary">{{ data.days_present }}</span>
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ total_working_days }}</span>
+            </td>
+            <td>
+              <span class="badge {% if data.attendance_rate >= 80 %}bg-success{% elif data.attendance_rate >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="font-size: 0.9rem;">
+                {{ data.attendance_rate }}%
+              </span>
+            </td>
+            <td>
+              <strong>{{ data.total_time_minutes|floatformat:0 }}m</strong>
+              <br><small class="text-muted">({{ data.total_time_hours|floatformat:1 }}h)</small>
+            </td>
+            <td>
+              <span class="text-info">{{ data.avg_time_per_day|floatformat:0 }}m</span>
+              <br><small class="text-muted">({{ data.avg_time_per_day_hours|floatformat:1 }}h)</small>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">
+      <i class="bi bi-clock-history" style="font-size: 3rem;"></i>
+      <p class="mt-2">No time tracking data available for the selected period.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% block extra_js %}{% endblock %}
+<script>
+const chartCtx = document.getElementById('dailyChart');
+// Build arrays safely via template to avoid JS invalid date objects
+const labels = [
+  {% for d in daily_data %}'{{ d.date|date:"Y-m-d" }}'{% if not forloop.last %},{% endif %}{% endfor %}
+];
+const present = [
+  {% for d in daily_data %}{{ d.present|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}
+];
+const total = [
+  {% for d in daily_data %}{{ d.total|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}
+];
+new Chart(chartCtx, {type: 'line', data: {labels, datasets: [
+  {label: 'Present', data: present, borderColor: '#28a745', pointBackgroundColor: '#28a745', pointRadius: 3, tension: 0.25, fill: false},
+  {label: 'Total', data: total, borderColor: '#6c757d', pointBackgroundColor: '#6c757d', pointRadius: 3, tension: 0.25, fill: false}
+]}, options: {responsive: true, maintainAspectRatio: false}});
+
+// Overall statistics visualization beside Attendance Summary
+const summaryCtx = document.getElementById('summaryChart');
+const summaryLabels = ['Present', 'Geo Failed', 'Face Failed', 'Both Failed'];
+const summaryValues = [
+  {{ present_count|default:0 }},
+  {{ fail_geo_count|default:0 }},
+  {{ fail_face_count|default:0 }},
+  {{ fail_both_count|default:0 }}
+];
+new Chart(summaryCtx, {
+  type: 'line',
+  data: {
+    labels: summaryLabels,
+    datasets: [{
+      label: 'Overall Stats',
+      data: summaryValues,
+      borderColor: '#0d6efd',
+      backgroundColor: 'rgba(13,110,253,0.15)',
+      pointBackgroundColor: '#0d6efd',
+      pointRadius: 4,
+      tension: 0.3,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {legend: {display: false}},
+    scales: {y: {beginAtZero: true, precision: 0}}
+  }
+});
+</script>
+{% endblock %}
+
+

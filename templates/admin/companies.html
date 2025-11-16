@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2"><i class="bi bi-building"></i> Companies</h1>
+  <a href="{% url 'users:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+</div>
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="card mb-3">
+      <div class="card-header"><h5 class="mb-0">Add Company</h5></div>
+      <div class="card-body">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Company Name</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Latitude</label>
+              <input type="text" name="lat" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Longitude</label>
+              <input type="text" name="lon" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Radius (m)</label>
+            <input type="number" step="1" name="radius" class="form-control" value="150">
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-plus"></i> Add Company</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><h5 class="mb-0">Companies</h5></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Lat</th>
+                <th>Lon</th>
+                <th>Radius</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in companies %}
+              <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.lat }}</td>
+                <td>{{ c.lon }}</td>
+                <td>{{ c.radius }} m</td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="{% url 'attendance:edit_company' c.id %}" class="btn btn-outline-primary" title="Edit Company">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'attendance:delete_company' c.id %}" class="btn btn-outline-danger" 
+                       title="Delete Company" 
+                       onclick="return confirm('Are you sure you want to delete {{ c.name }}? This action cannot be undone.')">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted">No companies yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

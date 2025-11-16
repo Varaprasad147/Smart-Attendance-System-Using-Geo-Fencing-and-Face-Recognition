@@ -1,0 +1,722 @@
+{% extends 'base.html' %}
+
+{% block title %}Mark Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-check-circle"></i> Mark Attendance</h1>
+    <a href="{% url 'users:student_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Attendance Marking</h5></div>
+            <div class="card-body">
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <div>
+                        <strong>Instructions:</strong> Allow location access and take a clear selfie to mark your attendance.
+                        Make sure you are within the designated area and your face is clearly visible.
+                    </div>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data" id="attendanceForm">
+                    {% csrf_token %}
+                    
+                    <!-- Attendance Type Selection -->
+                    <div class="mb-4">
+                        <label class="form-label">Attendance Type</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="attendance_type" id="check_in" value="check_in" checked>
+                                    <label class="form-check-label" for="check_in">
+                                        <i class="bi bi-box-arrow-in-right text-success"></i> Check In
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="attendance_type" id="check_out" value="check_out">
+                                    <label class="form-check-label" for="check_out">
+                                        <i class="bi bi-box-arrow-right text-warning"></i> Check Out
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location Information -->
+                    <div class="mb-3">
+                        <label class="form-label">Location Validation</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="number" class="form-control" id="lat" name="lat" 
+                                       placeholder="Latitude" step="any" required readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control" id="lon" name="lon" 
+                                       placeholder="Longitude" step="any" required readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control" id="accuracy" name="accuracy" 
+                                       placeholder="Accuracy (m)" step="any" required readonly>
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="validateLocationAndGetCamera()">
+                                <i class="bi bi-geo-alt"></i> Validate Location & Get Camera
+                            </button>
+                            <span id="locationStatus" class="ms-2 text-muted"></span>
+                            {% if assigned_lat and assigned_lon %}
+                            <div class="small text-muted mt-2">
+                                Assigned center: {{ assigned_lat }}, {{ assigned_lon }} · Radius: {{ geofence_radius|default:50 }} m
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Live Camera Capture -->
+                    <div class="mb-3">
+                        <label class="form-label">Live Selfie Capture</label>
+                        
+                        <!-- Camera Preview -->
+                        <div class="camera-container mb-3">
+                            <div id="cameraPreview" class="camera-preview" style="display: none;">
+                                <video id="video" autoplay playsinline></video>
+                                <canvas id="canvas" style="display: none;"></canvas>
+                            </div>
+                            <div id="capturedImage" class="captured-image" style="display: none;">
+                                <img id="photo" alt="Captured photo">
+                            </div>
+                        </div>
+                        
+                        <!-- Camera Controls -->
+                        <div class="camera-controls mb-3">
+                            <button type="button" class="btn btn-primary me-2" id="startCamera" disabled>
+                                <i class="bi bi-camera-video"></i> Start Camera
+                            </button>
+                            <button type="button" class="btn btn-success me-2" id="capturePhoto" style="display: none;">
+                                <i class="bi bi-camera"></i> Capture Selfie
+                            </button>
+                            <button type="button" class="btn btn-warning me-2" id="retakePhoto" style="display: none;">
+                                <i class="bi bi-arrow-clockwise"></i> Retake
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="stopCamera" style="display: none;">
+                                <i class="bi bi-stop-circle"></i> Stop Camera
+                            </button>
+                        </div>
+                        
+                        <!-- Hidden input for captured image -->
+                        <input type="hidden" id="selfie_image" name="selfie_image" required>
+                        
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> Click "Start Camera" to access your device camera, then capture a clear selfie showing your face.
+                        </div>
+                    </div>
+                    
+                    <!-- Device Information -->
+                    <div class="mb-3">
+                        <label for="device_info" class="form-label">Device Information (Optional)</label>
+                        <input type="text" class="form-control" id="device_info" name="device_info" 
+                               placeholder="e.g., Chrome on Windows 10">
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                            <i class="bi bi-check-circle"></i> Mark Attendance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-lg-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Requirements</h5></div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-geo-alt text-primary me-2"></i>
+                        <strong>Location:</strong> Must be within company premises
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-camera text-primary me-2"></i>
+                        <strong>Selfie:</strong> Clear face photo required
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-wifi text-primary me-2"></i>
+                        <strong>GPS Accuracy:</strong> Within 100 meters
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-shield-check text-primary me-2"></i>
+                        <strong>Face Match:</strong> Must match enrolled photo
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header"><h5 class="mb-0">Today's Status</h5></div>
+            <div class="card-body">
+                <div id="todayStatus">
+                    <div class="text-center">
+                        <i class="bi bi-clock-history text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">No attendance marked today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.camera-preview {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.camera-preview video {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+.captured-image {
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.captured-image img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.camera-controls {
+    text-align: center;
+}
+
+.camera-status {
+    text-align: center;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.camera-status.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.camera-status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.camera-status.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Location validation popup styles */
+.location-validation-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.popup-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.popup-header {
+    padding: 20px 20px 0 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.popup-header h5 {
+    margin: 0;
+    color: #495057;
+}
+
+.popup-body {
+    padding: 20px;
+}
+
+.location-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.location-info p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.validation-status {
+    margin-bottom: 20px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    padding: 8px 0;
+}
+
+.status-item i {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.popup-footer {
+    padding: 20px;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+</style>
+
+<script>
+// Global variables for camera
+let stream = null;
+let capturedImageData = null;
+let geofenceValidated = false;
+
+// Helper: Haversine distance (meters)
+function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
+    const toRad = deg => (deg * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// Enhanced location validation with popup
+function validateLocationAndGetCamera() {
+    const statusElement = document.getElementById('locationStatus');
+    
+    if (!navigator.geolocation) {
+        statusElement.innerHTML = '<span class="text-danger">Geolocation not supported</span>';
+        return;
+    }
+    
+    statusElement.innerHTML = '<span class="text-info">Validating location...</span>';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            document.getElementById('lat').value = lat.toFixed(6);
+            document.getElementById('lon').value = lon.toFixed(6);
+            document.getElementById('accuracy').value = accuracy.toFixed(2);
+            
+            // Show location validation popup
+            showLocationValidationPopup(lat, lon, accuracy);
+            
+        },
+        function(error) {
+            let errorMsg = 'Error getting location: ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg += 'Permission denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg += 'Position unavailable';
+                    break;
+                case error.TIMEOUT:
+                    errorMsg += 'Request timeout';
+                    break;
+                default:
+                    errorMsg += 'Unknown error';
+                    break;
+            }
+            statusElement.innerHTML = '<span class="text-danger">' + errorMsg + '</span>';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        }
+    );
+}
+
+// Location validation popup
+function showLocationValidationPopup(lat, lon, accuracy) {
+    const assignedLat = {{ assigned_lat|default:'null' }};
+    const assignedLon = {{ assigned_lon|default:'null' }};
+    const radiusM = {{ geofence_radius|default:50 }};
+    let distanceText = 'N/A';
+    let within = false;
+    let withinEffective = false;
+    
+    // Handle unrealistic accuracy values (often indicates GPS issue or default value)
+    if (accuracy > 1000) {
+        // Treat as GPS error, allow geofence check to proceed
+        console.log('Unrealistic GPS accuracy detected:', accuracy, 'm - treating as GPS error');
+        accuracy = 50.0; // Use reasonable default
+    }
+    
+    // Calculate effective radius with accuracy buffer (matching backend logic)
+    const effectiveRadiusM = radiusM + (accuracy / 2);
+    
+    if (assignedLat !== null && assignedLon !== null) {
+        const dist = haversineDistanceMeters(assignedLat, assignedLon, lat, lon);
+        distanceText = dist.toFixed(1) + ' m';
+        within = dist <= radiusM;
+        withinEffective = dist <= effectiveRadiusM;
+    }
+    
+    // Allow if within strict radius OR within effective radius (matching backend logic)
+    const isAllowed = within || withinEffective;
+    
+    const popup = document.createElement('div');
+    popup.className = 'location-validation-popup';
+    popup.innerHTML = `
+        <div class="popup-content">
+            <div class="popup-header">
+                <h5><i class="bi bi-geo-alt"></i> Location Validation Status</h5>
+            </div>
+            <div class="popup-body">
+                <div class="location-info">
+                    <p><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+                    <p><strong>Accuracy:</strong> ${accuracy.toFixed(2)} meters</p>
+                </div>
+                <div class="validation-status">
+                    <div class="status-item">
+                        ${within ? '<i class="bi bi-check-circle text-success"></i>' : (withinEffective ? '<i class="bi bi-exclamation-triangle text-warning"></i>' : '<i class="bi bi-x-circle text-danger"></i>')}
+                        <span>Distance to center: ${distanceText} (limit ${radiusM} m ${!within && withinEffective ? ', effective: ' + effectiveRadiusM.toFixed(0) + ' m' : ''})</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="bi bi-info-circle ${accuracy < 100 ? 'text-success' : (accuracy < 1000 ? 'text-warning' : 'text-danger')}"></i>
+                        <span>Accuracy: ${accuracy.toFixed(0)} m</span>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-footer">
+                <button type="button" class="btn btn-success" onclick="proceedToCamera(${isAllowed})" ${isAllowed ? '' : 'disabled'}>
+                    <i class="bi bi-camera"></i> Proceed to Camera
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeLocationPopup()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(popup);
+}
+
+function proceedToCamera(isWithin) {
+    if (!isWithin) {
+        return; // hard gate
+    }
+    geofenceValidated = true;
+    // enable Start Camera button as well
+    const startBtn = document.getElementById('startCamera');
+    if (startBtn) startBtn.disabled = false;
+    closeLocationPopup();
+    document.getElementById('locationStatus').innerHTML = '<span class="text-success">Location validated ✓</span>';
+    // Optionally auto-start camera only after validation
+    startCamera();
+}
+
+function closeLocationPopup() {
+    const popup = document.querySelector('.location-validation-popup');
+    if (popup) {
+        popup.remove();
+    }
+}
+
+// Camera functions
+async function startCamera() {
+    if (!geofenceValidated) {
+        showCameraStatus('error', 'You must validate location within range before starting the camera.');
+        return;
+    }
+    try {
+        showCameraStatus('info', 'Starting camera...');
+        
+        // Request camera access with front camera preference
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user', // Front camera
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
+            audio: false
+        });
+        
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        
+        // Show camera preview and controls
+        document.getElementById('cameraPreview').style.display = 'block';
+        document.getElementById('capturedImage').style.display = 'none';
+        document.getElementById('startCamera').style.display = 'none';
+        document.getElementById('capturePhoto').style.display = 'inline-block';
+        document.getElementById('stopCamera').style.display = 'inline-block';
+        document.getElementById('retakePhoto').style.display = 'none';
+        
+        showCameraStatus('success', 'Camera started! Position your face in the frame.');
+        
+    } catch (error) {
+        console.error('Camera error:', error);
+        showCameraStatus('error', 'Camera access denied or not available. Please allow camera access and try again.');
+    }
+}
+
+function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photo = document.getElementById('photo');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob and create object URL
+    canvas.toBlob(function(blob) {
+        // Create a file from the blob
+        const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+        
+        // Store the file data for form submission
+        capturedImageData = file;
+        
+        // Display captured image
+        photo.src = URL.createObjectURL(blob);
+        document.getElementById('cameraPreview').style.display = 'none';
+        document.getElementById('capturedImage').style.display = 'block';
+        document.getElementById('capturePhoto').style.display = 'none';
+        document.getElementById('retakePhoto').style.display = 'inline-block';
+        
+        showCameraStatus('success', 'Photo captured! Click "Retake" if you want to capture again.');
+        
+        // Update form validity
+        checkFormValidity();
+    }, 'image/jpeg', 0.8);
+}
+
+function retakePhoto() {
+    // Hide captured image, show camera preview
+    document.getElementById('capturedImage').style.display = 'none';
+    document.getElementById('cameraPreview').style.display = 'block';
+    document.getElementById('capturePhoto').style.display = 'inline-block';
+    document.getElementById('retakePhoto').style.display = 'none';
+    
+    capturedImageData = null;
+    showCameraStatus('info', 'Ready to capture. Position your face in the frame.');
+    
+    // Update form validity
+    checkFormValidity();
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    
+    // Hide camera elements
+    document.getElementById('cameraPreview').style.display = 'none';
+    document.getElementById('startCamera').style.display = 'inline-block';
+    document.getElementById('capturePhoto').style.display = 'none';
+    document.getElementById('stopCamera').style.display = 'none';
+    document.getElementById('retakePhoto').style.display = 'none';
+    
+    capturedImageData = null;
+    showCameraStatus('info', 'Camera stopped.');
+    
+    // Update form validity
+    checkFormValidity();
+}
+
+function showCameraStatus(type, message) {
+    // Remove existing status
+    const existingStatus = document.querySelector('.camera-status');
+    if (existingStatus) {
+        existingStatus.remove();
+    }
+    
+    // Create new status
+    const statusDiv = document.createElement('div');
+    statusDiv.className = `camera-status ${type}`;
+    statusDiv.innerHTML = `<i class="bi bi-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i> ${message}`;
+    
+    // Insert after camera controls
+    const cameraControls = document.querySelector('.camera-controls');
+    cameraControls.insertAdjacentElement('afterend', statusDiv);
+}
+
+// Check form validity
+function checkFormValidity() {
+    const lat = document.getElementById('lat').value;
+    const lon = document.getElementById('lon').value;
+    const accuracy = document.getElementById('accuracy').value;
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (lat && lon && accuracy && capturedImageData && geofenceValidated) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Mark Attendance';
+    } else {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Complete Required Fields';
+    }
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Camera event listeners
+    document.getElementById('startCamera').addEventListener('click', startCamera);
+    document.getElementById('capturePhoto').addEventListener('click', capturePhoto);
+    document.getElementById('retakePhoto').addEventListener('click', retakePhoto);
+    document.getElementById('stopCamera').addEventListener('click', stopCamera);
+    
+    // Auto-get location on page load
+    if (typeof getCurrentLocation === 'function') {
+        getCurrentLocation();
+    } else {
+        // fallback: pre-validate when user clicks
+    }
+});
+
+// Form submission
+document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+    // Prevent default form submission
+    e.preventDefault();
+    
+    if (!geofenceValidated) {
+        showCameraStatus('error', 'Location not validated within geofence.');
+        return;
+    }
+
+    if (!capturedImageData) {
+        showCameraStatus('error', 'Please capture a selfie before submitting.');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+    
+    // Create FormData and append captured image
+    const formData = new FormData();
+    formData.append('lat', document.getElementById('lat').value);
+    formData.append('lon', document.getElementById('lon').value);
+    formData.append('accuracy', document.getElementById('accuracy').value);
+    formData.append('device_info', document.getElementById('device_info').value);
+    formData.append('selfie_image', capturedImageData, 'selfie.jpg');
+    
+    // Get selected attendance type
+    const attendanceType = document.querySelector('input[name="attendance_type"]:checked').value;
+    formData.append('attendance_type', attendanceType);
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    
+    // Submit form using fetch with proper headers
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // Check if response is a redirect
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                // Try to parse response for success message
+                return response.text().then(html => {
+                    // If response contains success, redirect manually
+                    if (html.includes('Attendance marked successfully')) {
+                        window.location.href = '/student/dashboard/';
+                    } else {
+                        throw new Error('Unexpected response');
+                    }
+                });
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+    })
+    .catch(error => {
+        console.error('Submission error:', error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Mark Attendance';
+        showCameraStatus('error', `Failed to submit attendance: ${error.message}`);
+    });
+});
+
+// Backward-compatible helper if referenced elsewhere
+function getCurrentLocation() {
+    // Trigger location validation without auto-starting camera
+    const statusElement = document.getElementById('locationStatus');
+    if (!navigator.geolocation) {
+        statusElement.innerHTML = '<span class="text-danger">Geolocation not supported</span>';
+        return;
+    }
+    statusElement.innerHTML = '<span class="text-info">Fetching location...</span>';
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        document.getElementById('lat').value = lat.toFixed(6);
+        document.getElementById('lon').value = lon.toFixed(6);
+        document.getElementById('accuracy').value = accuracy.toFixed(2);
+        statusElement.innerHTML = '<span class="text-success">Location captured</span>';
+    }, function() {
+        statusElement.innerHTML = '<span class="text-danger">Unable to get location</span>';
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+</script>
+{% endblock %}

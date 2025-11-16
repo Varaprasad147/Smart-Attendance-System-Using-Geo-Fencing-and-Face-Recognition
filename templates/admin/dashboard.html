@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-speedometer2"></i> Admin Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'users:manage_admins' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-people"></i> Manage Admins
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a class="btn btn-primary" href="{% url 'attendance:upload_students' %}"><i class="bi bi-upload"></i> Upload Students</a>
+                    <a class="btn btn-outline-primary" href="{% url 'attendance:manage_companies' %}"><i class="bi bi-building"></i> Companies</a>
+                    <a class="btn btn-outline-primary" href="{% url 'attendance:manage_students' %}"><i class="bi bi-people"></i> Manage Students</a>
+                    <a class="btn btn-outline-success" href="{% url 'attendance:attendance_analytics' %}"><i class="bi bi-graph-up"></i> Analytics</a>
+                    <a class="btn btn-outline-secondary" href="{% url 'attendance:contact_messages' %}"><i class="bi bi-chat-dots"></i> Messages</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Information</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2">Welcome to the Admin Dashboard.</p>
+                <ul class="mb-0">
+                    <li>Admins can upload student spreadsheets, manage students, and view analytics.</li>
+                    <li>Creating or editing admins and global settings are restricted to Super Admins.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

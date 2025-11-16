@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Students{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-upload"></i> Upload Students</h1>
+    <a href="{% url 'users:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+    </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header"><h5 class="mb-0">Upload CSV/XLSX</h5></div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">File</label>
+            <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xls" required>
+            <small class="text-muted">Required columns: roll_number, name, email, company</small>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-upload"></i> Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

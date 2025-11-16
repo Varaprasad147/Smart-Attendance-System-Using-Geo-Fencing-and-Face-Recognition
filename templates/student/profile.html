@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Profile{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-person"></i> Student Profile</h1>
+    <a href="{% url 'users:student_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <!-- Profile Information -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-circle"></i> Personal Information</h5>
+            </div>
+            <div class="card-body">
+                {% if profile %}
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>{{ profile.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>JNTU Number:</strong></td>
+                            <td>{{ profile.jntu_no }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td>{{ profile.user.email }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Company:</strong></td>
+                            <td>{{ profile.company|default:"Not assigned" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Face Enrolled:</strong></td>
+                            <td>
+                                {% if profile.face_enrolled %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-warning">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Enrolled Date:</strong></td>
+                            <td>{{ profile.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                    </table>
+                {% else %}
+                    <p class="text-muted">Profile information not available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Actions -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Profile Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'users:student_onboarding' %}" class="btn btn-primary">
+                        <i class="bi bi-camera"></i> Update Photo
+                    </a>
+                    <a href="{% url 'users:student_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'attendance:mark_attendance_view' %}" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Mark Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance History -->
+{% if attendance_history %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Attendance History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Geofence</th>
+                                <th>Face</th>
+                                <th>Location</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendance_history %}
+                            <tr>
+                                <td>{{ attendance.date|date:"M d, Y" }}</td>
+                                <td>{{ attendance.time|time:"H:i" }}</td>
+                                <td>
+                                    {% if attendance.status == 'present' %}
+                                        <span class="badge bg-success">Present</span>
+                                    {% elif attendance.status == 'fail_geo' %}
+                                        <span class="badge bg-warning">Geo Failed</span>
+                                    {% elif attendance.status == 'fail_face' %}
+                                        <span class="badge bg-warning">Face Failed</span>
+                                    {% elif attendance.status == 'fail_both' %}
+                                        <span class="badge bg-danger">Both Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.geofence_verified %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.face_verified %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ attendance.lat|floatformat:6 }}, {{ attendance.lon|floatformat:6 }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
