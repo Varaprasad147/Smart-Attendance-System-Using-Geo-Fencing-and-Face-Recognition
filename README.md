@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# Geofenced Intelligent Attendance System
+# Smart Attendance System Using Geo Fencing and Face Recognition
 
 A Django-based attendance system with geofencing and facial recognition.
 
@@ -30,8 +30,8 @@ Smart Attendance System Using Geo-Fencing and Face Recognition
 The Smart Attendance System combines Face Recognition and Geo-Fencing to automate secure, location-based attendance marking for students and staff.
 This system prevents proxy attendance, ensures authenticity, and provides a user-friendly admin dashboard for monitoring attendance in real time.
 
-✨ Key Features
-🔐 Face Recognition
+# ✨ Key Features
+## 🔐 Face Recognition
 Detects and recognizes faces using OpenCV and dlib/face_recognition.
 
 Ensures only registered individuals can mark attendance.
